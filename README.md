@@ -11,7 +11,9 @@ src/agent_scaffold/
   tool_call/      # 本地工具调用，支持同步/异步工具与统一结果封装
   memory/         # 以 user_id 关联的记忆存储与查询
   session/        # 会话状态机、上下文管理、会话数据存取
+  context_trim/   # LLM 调用前的上下文裁剪与压缩边界
   process/        # Agent 业务流程编排，包含 ReAct loop
+  trace.py        # JSONL 事件追踪日志
 ```
 
 ## Install Dependencies
@@ -40,6 +42,22 @@ result = executor.call("add", {"a": 1, "b": 2})
 memory = InMemoryStore()
 memory.save("user-1", "The user prefers concise answers.")
 user_memories = memory.search("user-1", "concise")
+```
+
+## ReAct Process Hooks
+
+`ReActAgent` 支持可替换的上下文裁剪器、会话历史和 trace 日志：
+
+```python
+from agent_scaffold.context_trim import PassthroughContextTrimmer
+from agent_scaffold.process import ReActAgent, ReActConfig
+
+agent = ReActAgent(
+    llm_client=llm,
+    tool_registry=registry,
+    context_trimmer=PassthroughContextTrimmer(),
+    config=ReActConfig(trace_log_path="logs/react_trace.jsonl"),
+)
 ```
 
 ## Run Tests

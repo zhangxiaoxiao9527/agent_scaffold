@@ -1,6 +1,8 @@
 import unittest
 
-from agent_scaffold.session import SessionManager, SessionStatus
+import tempfile
+
+from agent_scaffold.session import MarkdownSessionHistoryStore, SessionManager, SessionStatus
 
 
 class SessionTests(unittest.TestCase):
@@ -34,13 +36,30 @@ class SessionTests(unittest.TestCase):
             manager.transition(session.id, SessionStatus.ACTIVE)
 
     def test_list_and_delete_sessions(self):
-        manager = SessionManager()
-        session = manager.create()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = SessionManager(
+                history_store=MarkdownSessionHistoryStore(temp_dir)
+            )
+            session = manager.create()
 
-        self.assertEqual(len(manager.list()), 1)
-        manager.delete(session.id)
+            self.assertEqual(len(manager.list()), 1)
+            manager.delete(session.id)
 
-        self.assertEqual(manager.list(), [])
+            self.assertEqual(manager.list(), [])
+
+    def test_session_manager_appends_and_reads_history(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            manager = SessionManager(
+                history_store=MarkdownSessionHistoryStore(temp_dir)
+            )
+            session = manager.create()
+
+            manager.append_history(session.id, "user", "hello")
+            manager.append_history(session.id, "assistant", "hi")
+
+            history = manager.get_history(session.id)
+
+            self.assertEqual([message.content for message in history], ["hello", "hi"])
 
 
 if __name__ == "__main__":
